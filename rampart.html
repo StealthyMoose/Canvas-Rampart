@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+	<script type="text/javascript" src="./simplex.js"></script>
+	<script language="javascript">
+		var i = 0
+
+		var context = null;
+
+		var testImage = null;
+
+		var simplex = new SimplexNoise()
+
+		const GRIDHEIGHT = 60
+		const GRIDWIDTH = 40
+
+		// px
+		const CELLSIZE = 12
+
+		var grid = [];
+
+		/*
+		for (var y = 0; y < GRIDHEIGHT; y++) {
+			for (var x = 0; x < GRIDWIDTH; x++) {
+				var simpValue = simplex.noise(x/GRIDHEIGHT, y/GRIDWIDTH)
+				grid[y*GRIDHEIGHT + x] = simpValue > 0
+			}
+		}*/
+		
+		function generateMap(offsetX, offsetY, scale, threshold) {
+			for (var x = 0; x < GRIDWIDTH; x++) {
+				for (var y = 0; y < GRIDHEIGHT; y++) {
+					var simpValue = simplex.noise(x/scale + offsetX, y/scale + offsetY)
+					grid[y*GRIDHEIGHT + x] = simpValue > threshold;
+				}
+			}
+		}
+
+		function mainLoop() {
+			var canvas = document.getElementById("myCanvas")
+			context = canvas.getContext("2d");
+
+			//context.clearRect(0,0,1280,720)
+
+			//context.save();
+
+			//context.translate(100 + i,100 + i);
+
+			//context.strokeStyle = "#000000"
+			//context.fillStyle = "#ff0000"
+
+			//context.fillRect(0,0,200,200);
+
+			//context.restore();
+
+			//makeImage()
+
+			i++;
+		}
+
+		function makeImage() {
+			var newPixels = context.getImageData(0,0,600,720)
+			
+			for (var y = 0; y < newPixels.height; y++) {
+				for (var x = 0; x < newPixels.width; x++) {
+					var i = getPixelIndex(newPixels, x, y);
+
+					var color = simplex.noise(x/100,y/100) + 1;
+					color *= 127;
+
+
+					newPixels.data[i] = color // red
+					newPixels.data[i+1] = color //green
+					newPixels.data[i+2] = color //blue
+					newPixels.data[i+3] = 255 // alpha
+				}
+			}
+
+			console.log("AHOY")
+			context.putImageData(newPixels, 0, 0)
+		}
+
+		function getPixelIndex(imageData,x,y) {
+			return (y * imageData.width + x) * 4;
+		}
+
+		function clickTest() {
+			makeImage()
+		}
+
+		function clickTwo() {
+			console.log("clickTwo")
+		}
+
+		function splat(y, x, pixels, color) {
+			var yStart = y * CELLSIZE;
+			var xStart = x * CELLSIZE;
+
+			// fill a circle
+			for (var circY = yStart - CELLSIZE/2; circY < yStart + CELLSIZE/2; circY++) {
+				for (var circX = xStart - CELLSIZE/2; circX < xStart + CELLSIZE/2; circX++) {
+					var pixelIndex = getPixelIndex(pixels, circX, circY);
+					pixels[pixelIndex] = (color & 0xff0000) >> 4;
+					pixels[pixelIndex + 1] = (color & 0xff00) >> 2;
+					pixels[pixelIndex + 2] = (color & 0xff);
+					pixels[pixelIndex + 3] = 255;
+				}
+			}
+		}
+
+		function splatMap() {
+			//var pixelData = context.createImageData(1280,720)
+
+			for (var y = 0; y < GRIDHEIGHT; y++) {
+				for (var x = 0; x < GRIDWIDTH; x++) {
+					var gridVal = grid[y*GRIDHEIGHT + x]
+					
+					if (gridVal == 0) {
+						context.fillStyle = "#0000ff";
+						//splat(y, x, pixelData, 0x0000ff)
+					} else {
+						context.fillStyle = "#00ff00"
+						//splat(y, x, pixelData, 0x00ff00)
+					}
+					context.beginPath()
+					context.rect(x*CELLSIZE, y*CELLSIZE, CELLSIZE, CELLSIZE)
+					context.fill()
+					context.closePath()
+				}
+			}
+
+			//context.putImageData(pixelData, 0, 0)
+		}
+
+		function canvasClick(evt) {
+			console.log(evt)
+
+			context.fillStyle = "#000000"
+			context.beginPath()
+			context.rect(evt.offsetX, evt.offsetY, 10, 10)
+			context.fill()
+			context.closePath()
+		}
+
+		function canvasMove(evt) {
+			/*
+			context.fillStyle = "#000000"
+			context.beginPath()
+			context.rect(evt.offsetX, evt.offsetY, 10, 10)
+			context.fill()
+			context.closePath()
+			*/
+		}
+
+		function canvasMouseDown(evt) {
+		}
+
+		function canvasMouseUp(evt) {
+		}
+
+		function init(e) {
+			var canvas = document.getElementById("myCanvas")
+			canvas.onclick = canvasClick
+			canvas.onmousemove = canvasMove
+			canvas.onmousedown = canvasMouseDown
+			canvas.onmouseup = canvasMouseUp
+			console.log("init, yo")
+		}
+
+		function generateRandomMap() {
+			var offsetX = Math.random() * 10;
+			var offsetY = Math.random() * 10;
+			var scale = Math.random() * 100;
+			var threshold = Math.random();
+			console.log(offsetX, offsetY, scale, threshold)
+			generateMap(offsetX, offsetY, scale, threshold);
+			splatMap();
+		}
+
+		window.onload = init
+		setInterval(mainLoop,100)
+	</script>
+
+	<div id="testButtons">
+		<span id="testOne" onclick="clickTest()" style="background: #00ff00">
+			TEST
+		</span>
+		<span id="makeSplats" onclick="generateRandomMap()">Splat Map</span>
+	</div>
+	<div>
+		<canvas id="myCanvas" width="640" height="720"></canvas>
+		<span id = "navstuff">asdf</span>
+	</div>
+</html>
